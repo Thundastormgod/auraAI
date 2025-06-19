@@ -117,13 +117,40 @@ export const useAscentStore = create<AscentState>((set, get) => ({
   generateMilestones: async (ascentId, ascentTitle) => {
     try {
       set({ loading: true });
-      const { data, error } = await supabase.functions.invoke('suggest-milestones', {
-        body: { ascentTitle }
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('suggest-milestones', {
+        body: { ascentTitle },
       });
 
-      if (error) throw error;
-      const milestones = data.milestones.map((m: any, index: number) => ({ ...m, ascent_id: ascentId, user_id: useUserStore.getState().session?.user.id, status: 'not_started', sequence_order: index + 1 }));
-      set((state) => ({ milestones: { ...state.milestones, [ascentId]: milestones } }));
+      if (functionError) throw functionError;
+      if (!functionData.milestones || functionData.milestones.length === 0) {
+        throw new Error('AI failed to generate milestones.');
+      }
+
+      const userId = useUserStore.getState().session?.user.id;
+      if (!userId) throw new Error('User not authenticated.');
+
+      const milestonesToInsert = functionData.milestones.map((m: any, index: number) => ({
+        title: m.title,
+        ascent_id: ascentId,
+        user_id: userId,
+        status: 'pending',
+        validation_type: 'ai_assisted',
+        sequence_order: index + 1,
+      }));
+
+      const { data: insertedMilestones, error: insertError } = await supabase
+        .from('milestones')
+        .insert(milestonesToInsert)
+        .select();
+
+      if (insertError) throw insertError;
+
+      set((state) => ({
+        milestones: {
+          ...state.milestones,
+          [ascentId]: insertedMilestones || [],
+        },
+      }));
     } catch (error) {
       console.error('Error generating milestones:', error);
     } finally {

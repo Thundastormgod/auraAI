@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, CheckCircle, PlayCircle, PauseCircle, Box } from 'lucide-react';
+import { Calendar, CheckCircle, PlayCircle, PauseCircle, Box, LayoutGrid } from 'lucide-react';
 import { Ascent } from '../stores/useAscentStore';
 
 interface AscentCardProps {
@@ -106,6 +106,18 @@ export const AscentCard: React.FC<AscentCardProps> = ({
                 Resume
               </Button>
             )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(ascent);
+              }}
+              className="text-xs"
+            >
+              <LayoutGrid className="w-4 h-4 mr-1" /> 2D View
+            </Button>
 
             <Button
               variant="outline"
